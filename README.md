@@ -1,1 +1,1 @@
-# Detecting-and-Classifying-Animal-Calls
+# Detecting and Classifying Animal Calls
