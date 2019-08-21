@@ -1,0 +1,1 @@
+network_train.py is file used for training the network. when training is complete a folder is created that contain accuracy and loss plots, ROC plots for validation set, history.pickle to recreate the accuracy and loss plots, architecture.txt shows the network architecture, savedmodel.h5 is the saved weights of the network which can be used for make for predictions.
