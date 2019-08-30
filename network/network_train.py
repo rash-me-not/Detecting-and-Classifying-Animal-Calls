@@ -41,13 +41,11 @@ def create_model(filters, gru_units, dense_neurons, dropout):
 
     reshape_1 = Reshape((x_train.shape[-3], -1))(mp_3)
 
-    
     rnn_1 = Bidirectional(GRU(units=gru_units, activation='tanh', dropout=dropout, 
                               recurrent_dropout=dropout, return_sequences=True), merge_mode='mul')(reshape_1)
     rnn_2 = Bidirectional(GRU(units=gru_units, activation='tanh', dropout=dropout, 
                               recurrent_dropout=dropout, return_sequences=True), merge_mode='mul')(rnn_1)
     
-
     dense_1  = TimeDistributed(Dense(dense_neurons, activation='relu'))(rnn_2)
     drop_1 = Dropout(rate=dropout)(dense_1)
     dense_2 = TimeDistributed(Dense(dense_neurons, activation='relu'))(drop_1)
@@ -178,7 +176,7 @@ config = tf.ConfigProto()
 #config.gpu_options.per_process_gpu_memory_fraction = 0.75 # set use %
 tf.Session(config=config)
 
-# create train and validation datasets
+# load train and validation datasets
 x_train = np.load('datasets/x_train.npy')
 x_val = np.load('datasets/x_val.npy')
 y_train = np.load('datasets/y_train.npy')
