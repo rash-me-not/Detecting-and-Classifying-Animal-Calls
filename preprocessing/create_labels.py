@@ -95,10 +95,10 @@ def create_label_matrix(dataframe, timesteps):
 
 
 paths = ['cc16_352a_converted/spectro/',
-		'cc16_352b_converted/spectro/',
-		'cc16_354a_converted/spectro/',
-		'cc16_360a_converted/spectro/',
-		'cc16_366a_converted/spectro/']
+	'cc16_352b_converted/spectro/',
+	'cc16_354a_converted/spectro/',
+	'cc16_360a_converted/spectro/',
+	'cc16_366a_converted/spectro/']
 
 for path in paths:
 	for f in os.listdir(path):
