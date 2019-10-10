@@ -166,7 +166,7 @@ def plot_class_ROC(model, x_val, y_val, save_folder):
 
 
 def save_arch(model, save_folder):
-    with open(save_folder + '/archiecture.txt','w') as f:
+    with open(save_folder + '/architecture.txt','w') as f:
     # Pass the file handle in as a lambda function to make it callable
         model.summary(print_fn=lambda x: f.write(x + '\n'))
 
