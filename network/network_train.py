@@ -9,11 +9,9 @@ import tensorflow as tf
 import sys
 import pickle
 import datetime
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 from keras.layers import Input
 from keras.models import Model 
-from keras.layers import Conv2D, MaxPooling2D, Activation, SeparableConv2D 
+from keras.layers import Conv2D, MaxPooling2D, Activation 
 from keras.layers import Reshape, Permute
 from keras.layers import BatchNormalization, TimeDistributed, Dense, Dropout
 from keras.layers import GRU, Bidirectional, GlobalAveragePooling2D
@@ -119,16 +117,16 @@ def plot_loss(model_fit, save_folder):
     plt.close()
 
 
-def plot_ROC(model, x_val, y_val, save_folder):
+def plot_ROC(model, x_test, y_test, save_folder):
     """
     Output: Plots and saves overall ROC graph
-    for the validation set.
+    for the test set.
     """
-    predicted = model.predict(x_val).ravel()
-    actual = y_val.ravel()
+    predicted = model.predict(x_test).ravel()
+    actual = y_test.ravel()
     fpr, tpr, thresholds = roc_curve(actual, predicted, pos_label=None)
     roc_auc = auc(fpr, tpr)
-    plt.title('Receiver Operating Characteristic Overall')
+    plt.title('Test ROC AUC')
     plt.plot(fpr, tpr, 'b', label='AUC = %0.3f' % roc_auc)
     plt.legend(loc='lower right')
     plt.plot([0,1],[0,1],'r--')
@@ -141,15 +139,15 @@ def plot_ROC(model, x_val, y_val, save_folder):
     plt.close()
 
 
-def plot_class_ROC(model, x_val, y_val, save_folder):
+def plot_class_ROC(model, x_test, y_test, save_folder):
     """
     Output: Plots and saves ROC graphs
-    for the validation set.
+    for the test set per class.
     """
     class_names = ['GIG', 'SQL', 'GRL', 'GRN', 'SQT', 'MOO', 'RUM', 'WHP']
     for i in range(len(class_names)):
-        predicted = model.predict(x_val)[:,:,i].ravel()
-        actual = y_val[:,:,i].ravel()
+        predicted = model.predict(x_test)[:,:,i].ravel()
+        actual = y_test[:,:,i].ravel()
         fpr, tpr, thresholds = roc_curve(actual, predicted, pos_label=None)
         roc_auc = auc(fpr, tpr)
         plt.title('Receiver Operating Characteristic ' + class_names[i])
@@ -167,7 +165,6 @@ def plot_class_ROC(model, x_val, y_val, save_folder):
 
 def save_arch(model, save_folder):
     with open(save_folder + '/architecture.txt','w') as f:
-    # Pass the file handle in as a lambda function to make it callable
         model.summary(print_fn=lambda x: f.write(x + '\n'))
 
 
@@ -179,8 +176,10 @@ tf.Session(config=config)
 # load train and validation datasets
 x_train = np.load('datasets/x_train.npy')
 x_val = np.load('datasets/x_val.npy')
+x_test = np.load('datasets/x_test.npy')
 y_train = np.load('datasets/y_train.npy')
 y_val = np.load('datasets/y_val.npy')
+y_test = np.load('datasets/y_test.npy')
 
 model = create_model(filters=128, gru_units=128, dense_neurons=1024, dropout=0.5)
 print(model.summary())
