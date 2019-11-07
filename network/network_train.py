@@ -8,9 +8,7 @@ import numpy as np
 import tensorflow as tf
 import sys
 import pickle
-import datetime
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from keras.models import load_model
 from keras.layers import Input
 from keras.models import Model 
 from keras.layers import Conv2D, MaxPooling2D, Activation, SeparableConv2D 
@@ -19,9 +17,8 @@ from keras.layers import BatchNormalization, TimeDistributed, Dense, Dropout
 from keras.layers import GRU, Bidirectional, GlobalAveragePooling2D
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras import optimizers
-from tensorflow.python.client import device_lib
 from sklearn.metrics import roc_curve, auc
-
+from datetime import datetime
 
 def create_model(filters, gru_units, dense_neurons, dropout):
     """
@@ -79,12 +76,13 @@ def save_model(save_folder):
         pickle.dump(model_fit.history, f)
 
 
-def plot_accuracy(model_fit, save_folder):
+def plot_accuracy(model_fit, save_folder, history=None):
     """
     Output: Plots and saves graph of accuracy at each epoch. 
     """
-    train_acc = model_fit.history['binary_accuracy']
-    val_acc = model_fit.history['val_binary_accuracy']
+
+    train_acc = history['binary_accuracy'] if history is not None else model_fit.history['binary_accuracy']
+    val_acc = history['val_binary_accuracy'] if history is not None else model_fit.history['val_binary_accuracy']
     epoch_axis = np.arange(1, len(train_acc) + 1)
     plt.title('Train vs Validation Accuracy')
     plt.plot(epoch_axis, train_acc, 'b', label='Train Acc')
@@ -99,12 +97,13 @@ def plot_accuracy(model_fit, save_folder):
     plt.close()
     
 
-def plot_loss(model_fit, save_folder):
+def plot_loss(model_fit, save_folder, history=None):
     """
     Output: Plots and saves graph of loss at each epoch. 
     """
-    train_loss = model_fit.history['loss']
-    val_loss = model_fit.history['val_loss']
+
+    train_loss = history['loss'] if history is not None else model_fit.history['loss']
+    val_loss = history['val_loss'] if history is not None else model_fit.history['val_loss']
     epoch_axis = np.arange(1, len(train_loss) + 1)
     plt.title('Train vs Validation Loss')
     plt.plot(epoch_axis, train_loss, 'b', label='Train Loss')
@@ -124,6 +123,7 @@ def plot_ROC(model, x_val, y_val, save_folder):
     Output: Plots and saves overall ROC graph
     for the validation set.
     """
+
     predicted = model.predict(x_val).ravel()
     actual = y_val.ravel()
     fpr, tpr, thresholds = roc_curve(actual, predicted, pos_label=None)
@@ -176,26 +176,71 @@ config = tf.ConfigProto()
 #config.gpu_options.per_process_gpu_memory_fraction = 0.75 # set use %
 tf.Session(config=config)
 
-# load train and validation datasets
-x_train = np.load('datasets/x_train.npy')
-x_val = np.load('datasets/x_val.npy')
-y_train = np.load('datasets/y_train.npy')
-y_val = np.load('datasets/y_val.npy')
+base_dir = '/cache/rmishra/cc16_366a_converted/'
+# # load train and validation datasets
+x_train = np.load(os.path.join(base_dir, 'datasets', 'x_train.npy'))
+x_val = np.load(os.path.join(base_dir, 'datasets', 'x_val.npy'))
+y_train = np.load(os.path.join(base_dir, 'datasets' , 'y_train.npy'))
+y_val = np.load(os.path.join(base_dir, 'datasets', 'y_val.npy'))
+
 
 model = create_model(filters=128, gru_units=128, dense_neurons=1024, dropout=0.5)
 print(model.summary())
 adam = optimizers.Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
-model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['binary_accuracy'])
-epochs = 2500
+model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['binary_accuracy'], sample_weight_mode="temporal")
+epochs = 5
 batch_size = 256
 early_stopping = EarlyStopping(monitor='val_loss', patience=100, restore_best_weights=True, verbose=1)
 reduce_lr_plat = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=25, verbose=1,
                                    mode='auto', min_delta=0.0001, cooldown=0, min_lr=0.000001)
 
+def count_labels(file):
+    count = {}
+    sound_label = {0: 'GIG', 1: 'SQL', 2: 'GRL', 3: 'GRN', 4: 'SQT', 5: 'MOO', 6: 'RUM', 7: 'WHP'}
+    y = np.load(file)
+    data = np.where(y == 1)[2]
+    for label_idx in data:
+        label = sound_label[label_idx]
+        count[label] = count.get(label, 0) + 1
+    return count
+
+# count_train = {}
+# sound_label = {0:'GIG',1:'SQL', 2:'GRL', 3:'GRN', 4:'SQT', 5:'MOO', 6:'RUM', 7:'WHP'}
+# y_train = np.load("/cache/rmishra/cc16_366a_converted/datasets/y_train.npy")
+# data = np.where(y_train==1)[2]
+# for label_idx in data:
+#     label= sound_label[label_idx]
+#     count_train[label] = count_train.get(label,0)+1
+#
+# count_test = {}
+# y_train = np.load("/cache/rmishra/cc16_366a_converted/datasets/y_test.npy")
+# data = np.where(y_train==1)[2]
+# for label_idx in data:
+#     label= sound_label[label_idx]
+#     count_test[label] = count_test.get(label,0)+1
+
+train_counts = count_labels("/cache/rmishra/cc16_366a_converted/datasets/y_train.npy")
+test_counts = count_labels("/cache/rmishra/cc16_366a_converted/datasets/y_test.npy")
+print("Train Labels: {}".format(train_counts))
+print("Test Labels: {}".format(test_counts))
+
+class_weights = {i: sum(train_counts.values())/train_counts[key] for i, key in enumerate(train_counts)}
+sample_weight = np.zeros((y_train.shape[0],y_train.shape[1]))
+for key, val in class_weights.items():
+    sample_weight[key,:] = val
+
 model_fit = model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size,
                       validation_data=(x_val, y_val), shuffle=True,
-                      callbacks=[early_stopping, reduce_lr_plat])
-date_time = datetime.datetime.now()
+                      callbacks=[early_stopping, reduce_lr_plat], sample_weight=class_weights)
+
+# model_fit = load_model('../network/saved_models/model_2019-10-23_21:27:20.360389_network_train/savedmodel.h5')
+
+# with open('../network/saved_models/model_2019-10-23_21:27:20.360389_network_train/history.pickle', 'rb') as handle:  # loading old history
+#     history = pickle.load(handle)
+
+
+# y_pred = model_fit.predict(x_val)
+date_time = datetime.now()
 sf = save_folder(date_time)
 create_save_folder(sf)
 save_model(sf)
@@ -204,3 +249,6 @@ plot_loss(model_fit, sf)
 plot_ROC(model, x_val, y_val, sf)
 plot_class_ROC(model, x_val, y_val, sf)
 save_arch(model, sf)
+
+
+
