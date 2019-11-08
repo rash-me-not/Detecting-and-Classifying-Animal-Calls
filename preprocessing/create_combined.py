@@ -11,7 +11,7 @@ if not os.path.exists(SAVE_PATH):
 for f in os.listdir(LOAD_PATH):
     if 'LABEL' in f and os.path.splitext(f)[-1].lower() == ".npy":
         label = np.load(os.path.join(LOAD_PATH,f))
-        if 1 in label:
+        if 1 in label[0:7,:]:
             spectro = np.load(os.path.join(LOAD_PATH, f.split('LABEL')[0]+'.npy'))
             combined = np.array((spectro, label))
             np.save(os.path.join(SAVE_PATH, f.split('LABEL')[0]+'SPEC_LAB.npy'), combined)

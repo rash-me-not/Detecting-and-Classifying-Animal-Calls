@@ -71,9 +71,10 @@ def create_label_matrix(dataframe, timesteps):
     [0, 0, 0, 0, 0, 0 ....],
     [1, 1, 1, 1, 0, 0 ....],] This represents a Whoop in 0-3 timesteps
     """
-    call_labels = ['GIG', 'SQL', 'GRL', 'GRN', 'SQT', 'MOO', 'RUM', 'WHP']
+    call_labels = ['GIG', 'SQL', 'GRL', 'GRN', 'SQT', 'MOO', 'RUM', 'WHP','OTH']
     dataframe = dataframe[dataframe['Label'].isin(call_labels)]
-    label = np.zeros((8, timesteps))
+    label = np.zeros((9, timesteps))
+    label[8,:] = 1
     if 'Label' in list(dataframe):
         # create update list
         update_list = []
@@ -81,6 +82,7 @@ def create_label_matrix(dataframe, timesteps):
             update_list.append([row['Begin Time(t)'],
                                 row['End Time(t)'],
                                 row['Label']])
+
         # label correct row based on label
         for l in update_list:
             begin_t = int(l[0])
@@ -101,6 +103,8 @@ def create_label_matrix(dataframe, timesteps):
                 label[6][begin_t:end_t] = 1
             elif l[2] == 'WHP':
                 label[7][begin_t:end_t] = 1
+            label[8][begin_t:end_t] = 0
+
     return label
 
 
@@ -119,7 +123,7 @@ for path in paths:
                 window_size = end_time - begin_time
                 timesteps = 259  # need to set timesteps
                 timesteps_per_second = timesteps / window_size
-                df = create_label_dataframe(os.path.join(base_dir,label),          #changing first parameter from label to f
+                df = create_label_dataframe(os.path.join(base_dir,label),
                                             begin_time,
                                             end_time,
                                             window_size,

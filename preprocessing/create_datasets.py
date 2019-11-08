@@ -4,36 +4,10 @@ import os
 from sklearn.model_selection import train_test_split
 
 
-# def create_train_test(base_dir):
-#     df = pd.DataFrame(columns=['file_id', 'fname', 'type'])
-#     for file in os.listdir(base_dir):
-#         if os.path.splitext(file)[-1].lower() == ".npy":
-#             file_id = file.split(".")[0][:-5] if "LABEL" in file else file.split(".")[0]
-#             type = "LABEL" if "LABEL" in file else "SPEC"
-#             df.loc[len(df)] = [file_id, file, type]
-#
-#     df = df.pivot(index="file_id", columns="type", values="fname")
-#
-#     features = []
-#     labels = []
-#     longest_seq = -1
-#     for spec_file, label_file in zip(df['SPEC'], df['LABEL']):
-#         print("Adding feature and label for: " + spec_file)
-#         spec = np.load(os.path.join(base_dir, spec_file)).T
-#         label = np.load(os.path.join(base_dir, label_file)).T
-#         longest_seq =  max(longest_seq, spec.shape[0])
-#         features.append(np.lib.pad(spec, ((0, longest_seq - len(spec)), (0, 0)), 'constant', constant_values=0))
-#         labels.append(np.lib.pad(label, ((0, longest_seq - len(label)), (0, 0)), 'constant', constant_values=0))
-#
-#     return [np.asarray(features), np.asarray(labels)]
-
 
 base_dir = '/cache/rmishra/cc16_366a_converted'
 SAVE_PATH = os.path.join(base_dir,'datasets')
-#
-#
-# x, y = create_train_test(base_dir+'/spectro')
-# x = np.expand_dims(x, 4)
+
 
 dataset = np.load('/cache/rmishra/cc16_366a_converted/datasets/1plus_dataset.npy')
 x = dataset[:, 0]

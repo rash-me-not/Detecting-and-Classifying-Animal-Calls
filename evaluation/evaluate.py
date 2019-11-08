@@ -12,7 +12,7 @@ config.gpu_options.allow_growth = True  # dynamically grow the memory used on th
 sess = tf.Session(config=config)
 set_session(sess)
 
-model = load_model('../network/saved_models/model_2019-11-06_07:33:24.272991_network_train/savedmodel.h5')
+model = load_model('../network/saved_models/model_2019-11-08_02:15:30.247730_network_train/savedmodel.h5')
 x_test = np.load('/cache/rmishra/cc16_366a_converted/datasets/x_test.npy')
 y_test = np.load('/cache/rmishra/cc16_366a_converted/datasets/y_test.npy')
 

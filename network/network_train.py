@@ -49,8 +49,7 @@ def create_model(filters, gru_units, dense_neurons, dropout):
     drop_2 = Dropout(rate=dropout)(dense_2)
     dense_3 = TimeDistributed(Dense(dense_neurons, activation='relu'))(drop_2)
     drop_3 = Dropout(rate=dropout)(dense_3)
-    output = TimeDistributed(Dense(8, activation='sigmoid'))(drop_3)
-
+    output = TimeDistributed(Dense(9, activation='sigmoid'))(drop_3)
     model = Model(inp, output)
     return model
 
@@ -146,7 +145,7 @@ def plot_class_ROC(model, x_val, y_val, save_folder):
     Output: Plots and saves ROC graphs
     for the validation set.
     """
-    class_names = ['GIG', 'SQL', 'GRL', 'GRN', 'SQT', 'MOO', 'RUM', 'WHP']
+    class_names = ['GIG', 'SQL', 'GRL', 'GRN', 'SQT', 'MOO', 'RUM', 'WHP','OTH']
     for i in range(len(class_names)):
         predicted = model.predict(x_val)[:,:,i].ravel()
         actual = y_val[:,:,i].ravel()
@@ -170,6 +169,16 @@ def save_arch(model, save_folder):
     # Pass the file handle in as a lambda function to make it callable
         model.summary(print_fn=lambda x: f.write(x + '\n'))
 
+def count_labels(file):
+    count = {}
+    sound_label = {0: 'GIG', 1: 'SQL', 2: 'GRL', 3: 'GRN', 4: 'SQT', 5: 'MOO', 6: 'RUM', 7: 'WHP', 8:'OTH'}
+    y = np.load(file)
+    data = np.where(y == 1)[2]
+    for label_idx in data:
+        label = sound_label[label_idx]
+        count[label] = count.get(label, 0) + 1
+    return count
+
 
 os.environ["CUDA_VISIBLE_DEVICES"]="2" # select GPU
 config = tf.ConfigProto()
@@ -188,21 +197,11 @@ model = create_model(filters=128, gru_units=128, dense_neurons=1024, dropout=0.5
 print(model.summary())
 adam = optimizers.Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
 model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['binary_accuracy'], sample_weight_mode="temporal")
-epochs = 5
+epochs = 30
 batch_size = 256
 early_stopping = EarlyStopping(monitor='val_loss', patience=100, restore_best_weights=True, verbose=1)
 reduce_lr_plat = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=25, verbose=1,
                                    mode='auto', min_delta=0.0001, cooldown=0, min_lr=0.000001)
-
-def count_labels(file):
-    count = {}
-    sound_label = {0: 'GIG', 1: 'SQL', 2: 'GRL', 3: 'GRN', 4: 'SQT', 5: 'MOO', 6: 'RUM', 7: 'WHP'}
-    y = np.load(file)
-    data = np.where(y == 1)[2]
-    for label_idx in data:
-        label = sound_label[label_idx]
-        count[label] = count.get(label, 0) + 1
-    return count
 
 # count_train = {}
 # sound_label = {0:'GIG',1:'SQL', 2:'GRL', 3:'GRN', 4:'SQT', 5:'MOO', 6:'RUM', 7:'WHP'}
@@ -224,14 +223,21 @@ test_counts = count_labels("/cache/rmishra/cc16_366a_converted/datasets/y_test.n
 print("Train Labels: {}".format(train_counts))
 print("Test Labels: {}".format(test_counts))
 
-class_weights = {i: sum(train_counts.values())/train_counts[key] for i, key in enumerate(train_counts)}
-sample_weight = np.zeros((y_train.shape[0],y_train.shape[1]))
-for key, val in class_weights.items():
-    sample_weight[key,:] = val
+
+
+class_map = {'GIG':0, 'SQL':1, 'GRL':2, 'GRN':3 , 'SQT':4, 'MOO':5, 'RUM':6, 'WHP':7, 'OTH':8}
+class_weights = {class_map[key]: sum(train_counts.values())/val for key,val in train_counts.items()}
+
+sample_weights = []
+for frame in y_train:
+    calls = np.argmax(frame, axis=1)
+    sample_weights.append(np.array([class_weights[call] for call in calls]))
+sample_weights = np.asarray(sample_weights)
+
 
 model_fit = model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size,
                       validation_data=(x_val, y_val), shuffle=True,
-                      callbacks=[early_stopping, reduce_lr_plat], sample_weight=class_weights)
+                      callbacks=[early_stopping, reduce_lr_plat], sample_weight=sample_weights)
 
 # model_fit = load_model('../network/saved_models/model_2019-10-23_21:27:20.360389_network_train/savedmodel.h5')
 
