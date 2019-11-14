@@ -1,12 +1,14 @@
 import os
 import numpy as np
-import sys
 
 LOAD_PATH = '/cache/rmishra/cc16_366a_converted/spectro'
 SAVE_PATH = '/cache/rmishra/cc16_366a_converted/combined'
 
 if not os.path.exists(SAVE_PATH):
     os.mkdir(SAVE_PATH)
+
+# Checking to see if the frame contains at least one valid hyena call.
+# If so, combining the spectrogram and the label file together
 
 for f in os.listdir(LOAD_PATH):
     if 'LABEL' in f and os.path.splitext(f)[-1].lower() == ".npy":

@@ -173,7 +173,6 @@ def save_arch(model, save_folder):
 
 os.environ["CUDA_VISIBLE_DEVICES"]="2" # select GPU
 config = tf.ConfigProto()
-#config.gpu_options.per_process_gpu_memory_fraction = 0.75 # set use %
 tf.Session(config=config)
 
 base_dir = '/cache/rmishra/cc16_366a_converted/'
@@ -204,20 +203,6 @@ def count_labels(file):
         count[label] = count.get(label, 0) + 1
     return count
 
-# count_train = {}
-# sound_label = {0:'GIG',1:'SQL', 2:'GRL', 3:'GRN', 4:'SQT', 5:'MOO', 6:'RUM', 7:'WHP'}
-# y_train = np.load("/cache/rmishra/cc16_366a_converted/datasets/y_train.npy")
-# data = np.where(y_train==1)[2]
-# for label_idx in data:
-#     label= sound_label[label_idx]
-#     count_train[label] = count_train.get(label,0)+1
-#
-# count_test = {}
-# y_train = np.load("/cache/rmishra/cc16_366a_converted/datasets/y_test.npy")
-# data = np.where(y_train==1)[2]
-# for label_idx in data:
-#     label= sound_label[label_idx]
-#     count_test[label] = count_test.get(label,0)+1
 
 train_counts = count_labels("/cache/rmishra/cc16_366a_converted/datasets/y_train.npy")
 test_counts = count_labels("/cache/rmishra/cc16_366a_converted/datasets/y_test.npy")
@@ -238,8 +223,6 @@ model_fit = model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size,
 # with open('../network/saved_models/model_2019-10-23_21:27:20.360389_network_train/history.pickle', 'rb') as handle:  # loading old history
 #     history = pickle.load(handle)
 
-
-# y_pred = model_fit.predict(x_val)
 date_time = datetime.now()
 sf = save_folder(date_time)
 create_save_folder(sf)

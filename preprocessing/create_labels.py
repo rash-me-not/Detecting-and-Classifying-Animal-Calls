@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import glob
 import os
 from create_data_groups import fetch_files_with_numcalls
 
@@ -34,11 +33,7 @@ def create_label_dataframe(label, begin_time, end_time, window_size, timesteps_p
                             names=['StartTime','Duration','Label'])
                             # index_col='Selection')
     if 'Label' in labels_df.columns:
-        # filter for any labels that do not start with definitive call type label
-        # call_labels = ['GIG', 'SQL', 'GRL', 'GRN', 'SQT', 'MOO', 'RUM', 'WHP']
-        # change labels to first 3 characters
         labels_df.Label = labels_df.Label.str[0:3]
-        # labels_df = labels_df[labels_df['Label'].isin(call_labels)]
         labels_df['Begin Time(t)'] = ((labels_df['StartTime'] - begin_time) * timesteps_per_second).apply(np.floor)
 
         labels_df['End Time(t)'] = ((labels_df['StartTime']+labels_df['Duration'] - begin_time) * timesteps_per_second).apply(np.floor)
@@ -113,13 +108,13 @@ for path in paths:
     if(os.path.exists(path)):
         for f in os.listdir(path):
             if 'LABEL' not in f:
-                label = find_label(f, base_dir)           #We dont have different duration files
+                label = find_label(f, base_dir)   #We dont have different duration files
                 begin_time = int(f.split('_')[-1].split('sto')[0])
                 end_time = int(f.split('_')[-1].split('sto')[1].split('s')[0])
                 window_size = end_time - begin_time
                 timesteps = 259  # need to set timesteps
                 timesteps_per_second = timesteps / window_size
-                df = create_label_dataframe(os.path.join(base_dir,label),          #changing first parameter from label to f
+                df = create_label_dataframe(os.path.join(base_dir,label),  #changing first parameter from label to f
                                             begin_time,
                                             end_time,
                                             window_size,

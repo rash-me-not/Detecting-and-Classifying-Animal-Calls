@@ -26,24 +26,17 @@ def save_spectrogram(filepath, start, stop, y, sr):
     np.save(path_save + file + '_' + str(start) + 'sto' + str(stop) + 's', s)
 
 
-"""
-Processing the audio files with a frame window size of 6 sec, advance of 3 sec, and generating the mel spectrogram
-"""
 
+# Processing the audio files with a frame window size of 6 sec, advance of 3 sec, and generating the mel spectrogram
 audio_paths = ['/cache/rmishra/cc16_366a_converted/audio/']
 
 window_size = 6
 slide = 3
-# file_count = 0
 for path in audio_paths:
     for file in os.listdir(path):
-        # file_count += 1
         filepath = path + file
         y, sr = librosa.load(filepath)
         length = int(len(y) / sr)
         remainder = length % window_size
         for i in range(0, length - remainder - window_size, slide):
             save_spectrogram(filepath, i, i + window_size, y, sr)
-            # j = i + slide
-            # if j + window_size < length - remainder:
-            #     save_spectrogram(filepath, j, j + window_size, y, sr)
