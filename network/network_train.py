@@ -20,7 +20,7 @@ from keras import optimizers
 from sklearn.metrics import roc_curve, auc
 from datetime import datetime
 
-def create_model(filters, gru_units, dense_neurons, dropout):
+def create_model(x_train, filters, gru_units, dense_neurons, dropout):
     """
     Outputs a non sequntial keras model
     filters = number of filters in each convolutional layer
@@ -49,7 +49,7 @@ def create_model(filters, gru_units, dense_neurons, dropout):
     drop_2 = Dropout(rate=dropout)(dense_2)
     dense_3 = TimeDistributed(Dense(dense_neurons, activation='relu'))(drop_2)
     drop_3 = Dropout(rate=dropout)(dense_3)
-    output = TimeDistributed(Dense(9, activation='sigmoid'))(drop_3)
+    output = TimeDistributed(Dense(9, activation='softmax'))(drop_3)
     model = Model(inp, output)
     return model
 
@@ -66,7 +66,7 @@ def create_save_folder(save_folder):
         os.makedirs(save_folder)
 
         
-def save_model(save_folder):
+def save_model(save_folder, model, model_fit):
     """
     Output: Saves dictionary of model training history as a pickle file.
     """
@@ -178,83 +178,5 @@ def count_labels(file):
         label = sound_label[label_idx]
         count[label] = count.get(label, 0) + 1
     return count
-
-
-os.environ["CUDA_VISIBLE_DEVICES"]="2" # select GPU
-config = tf.ConfigProto()
-#config.gpu_options.per_process_gpu_memory_fraction = 0.75 # set use %
-tf.Session(config=config)
-
-base_dir = '/cache/rmishra/cc16_366a_converted/'
-# # load train and validation datasets
-x_train = np.load(os.path.join(base_dir, 'datasets', 'x_train.npy'))
-x_val = np.load(os.path.join(base_dir, 'datasets', 'x_val.npy'))
-y_train = np.load(os.path.join(base_dir, 'datasets' , 'y_train.npy'))
-y_val = np.load(os.path.join(base_dir, 'datasets', 'y_val.npy'))
-
-
-model = create_model(filters=128, gru_units=128, dense_neurons=1024, dropout=0.5)
-print(model.summary())
-adam = optimizers.Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
-model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['binary_accuracy'], sample_weight_mode="temporal")
-epochs = 30
-batch_size = 256
-early_stopping = EarlyStopping(monitor='val_loss', patience=100, restore_best_weights=True, verbose=1)
-reduce_lr_plat = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=25, verbose=1,
-                                   mode='auto', min_delta=0.0001, cooldown=0, min_lr=0.000001)
-
-# count_train = {}
-# sound_label = {0:'GIG',1:'SQL', 2:'GRL', 3:'GRN', 4:'SQT', 5:'MOO', 6:'RUM', 7:'WHP'}
-# y_train = np.load("/cache/rmishra/cc16_366a_converted/datasets/y_train.npy")
-# data = np.where(y_train==1)[2]
-# for label_idx in data:
-#     label= sound_label[label_idx]
-#     count_train[label] = count_train.get(label,0)+1
-#
-# count_test = {}
-# y_train = np.load("/cache/rmishra/cc16_366a_converted/datasets/y_test.npy")
-# data = np.where(y_train==1)[2]
-# for label_idx in data:
-#     label= sound_label[label_idx]
-#     count_test[label] = count_test.get(label,0)+1
-
-train_counts = count_labels("/cache/rmishra/cc16_366a_converted/datasets/y_train.npy")
-test_counts = count_labels("/cache/rmishra/cc16_366a_converted/datasets/y_test.npy")
-print("Train Labels: {}".format(train_counts))
-print("Test Labels: {}".format(test_counts))
-
-
-
-class_map = {'GIG':0, 'SQL':1, 'GRL':2, 'GRN':3 , 'SQT':4, 'MOO':5, 'RUM':6, 'WHP':7, 'OTH':8}
-class_weights = {class_map[key]: sum(train_counts.values())/val for key,val in train_counts.items()}
-
-sample_weights = []
-for frame in y_train:
-    calls = np.argmax(frame, axis=1)
-    sample_weights.append(np.array([class_weights[call] for call in calls]))
-sample_weights = np.asarray(sample_weights)
-
-
-model_fit = model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size,
-                      validation_data=(x_val, y_val), shuffle=True,
-                      callbacks=[early_stopping, reduce_lr_plat], sample_weight=sample_weights)
-
-# model_fit = load_model('../network/saved_models/model_2019-10-23_21:27:20.360389_network_train/savedmodel.h5')
-
-# with open('../network/saved_models/model_2019-10-23_21:27:20.360389_network_train/history.pickle', 'rb') as handle:  # loading old history
-#     history = pickle.load(handle)
-
-
-# y_pred = model_fit.predict(x_val)
-date_time = datetime.now()
-sf = save_folder(date_time)
-create_save_folder(sf)
-save_model(sf)
-plot_accuracy(model_fit, sf)
-plot_loss(model_fit, sf)
-plot_ROC(model, x_val, y_val, sf)
-plot_class_ROC(model, x_val, y_val, sf)
-save_arch(model, sf)
-
 
 

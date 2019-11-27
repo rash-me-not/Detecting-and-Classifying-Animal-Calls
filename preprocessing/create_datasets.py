@@ -1,49 +1,58 @@
 import numpy as np
-import pandas as pd
 import os
-from sklearn.model_selection import train_test_split
 
 
+def get_random_idx(features, seed):
+    """ Returns random indices with feature size based on a random seed value """
+    rng = np.random.RandomState(seed)
+    indices = rng.permutation(features.shape[0])
+    return indices
 
-base_dir = '/cache/rmishra/cc16_366a_converted'
-SAVE_PATH = os.path.join(base_dir,'datasets')
+
+def get_data(features, labels, files, indices):
+    """Return features, labels and files at given indices """
+    features = [features[idx] for idx in indices]
+    labels = [labels[idx] for idx in indices]
+    files = [files[idx] for idx in indices]
+    return features, labels, files
 
 
-dataset = np.load('/cache/rmishra/cc16_366a_converted/datasets/1plus_dataset.npy')
-x = dataset[:, 0]
-y = dataset[:, 1]
-# reformat x to (n, timesteps, mel bands, 1)
-features = []
-labels = []
-longest_seq = -1
-for spec, label in zip(x, y):
-    spec = spec.T
-    label= label.T
-    longest_seq =  max(longest_seq, spec.shape[0])
-    features.append(np.lib.pad(spec, ((0, longest_seq - len(spec)), (0, 0)), 'constant', constant_values=0))
-    labels.append(np.lib.pad(label, ((0, longest_seq - len(label)), (0, 0)), 'constant', constant_values=0))
+def get_feature_labels_files(dataset):
+    """Returns features, labels and files from a given dataset"""
+    dataset = np.asarray(dataset)
+    features = []
+    labels = []
+    files = []
+    for frame in dataset:
+        files.append(frame[0])
+        features.append(frame[1][0].T)
+        labels.append(frame[1][1].T)
+    features = np.expand_dims(np.asarray(features), 4)
+    labels = np.asarray(labels)
+    return [features, labels, files]
 
-features = np.expand_dims(np.asarray(features),4)
-labels = np.asarray(labels)
 
-# split data into test, train and validation
-TRAIN = 0.75
-VALIDATION = 0.15
-TEST = 0.10
+def get_train_val_indices(dataset, train_ratio, val_ratio):
+    """ Based on the given Train and Validation ratio, return random indices from the given dataset"""
+    features = get_feature_labels_files(dataset)[0]
+    indices = get_random_idx(features, 42).tolist()
+    train_indices = indices[:int(train_ratio * len(indices))]
+    val_indices = indices[int(train_ratio * len(indices)): int(train_ratio * len(indices)) + int(val_ratio * len(indices)) + 1]
+    test_indices = indices[int(train_ratio * len(indices)) + int(val_ratio * len(indices)) + 1::]
+    return [train_indices, val_indices, test_indices]
 
-# create train set
-x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size=1 - TRAIN)
+def get_train_val_test(dataset, train_ratio, val_ratio):
+    """Return train,test and validation data based on the training and validation ratio. Each dataset that is returned
+    contains the features, labels and the filenames"""
+    features, labels, files = get_feature_labels_files(dataset)
+    train_indices, val_indices, test_indices = get_train_val_indices(dataset, train_ratio, val_ratio)
+    x_train, y_train, train_files = get_data(features, labels, files, train_indices)
+    x_val, y_val, val_files = get_data(features, labels, files, val_indices)
+    x_test, y_test, test_files = get_data(features, labels, files, test_indices)
+    return {'train': [x_train, y_train, train_files], 'test': [x_test, y_test, test_files], 'val': [x_val, y_val, val_files]}
 
-# create val and test set
-x_val, x_test, y_val, y_test = train_test_split(x_test, y_test, test_size=TEST/(TEST + VALIDATION)) 
-
-if not os.path.exists(SAVE_PATH):
-    os.mkdir(SAVE_PATH)
-
-# save files
-np.save(os.path.join(SAVE_PATH, 'x_train.npy'), x_train)
-np.save(os.path.join(SAVE_PATH, 'x_val.npy'), x_val)
-np.save(os.path.join(SAVE_PATH, 'x_test.npy'), x_test)
-np.save(os.path.join(SAVE_PATH, 'y_train.npy'), y_train)
-np.save(os.path.join(SAVE_PATH, 'y_val.npy'), y_val)
-np.save(os.path.join(SAVE_PATH, 'y_test.npy'), y_test)
+def save_data(data, filename, save_path):
+    """Saves the dataset in a given file path"""
+    if not os.path.exists(save_path):
+        os.mkdir(save_path)
+    np.save(os.path.join(save_path, filename), data)

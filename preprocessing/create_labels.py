@@ -2,20 +2,11 @@ import numpy as np
 import pandas as pd
 import glob
 import os
-from create_data_groups import fetch_files_with_numcalls
+from preprocessing.create_data_groups import fetch_files_with_numcalls
 
 
 def find_label(file, path):
     """
-    ***OLD:
-    Output: Audit label file relating to input spectro file
-    There are a few instances where a file has multiple audit label files:
-    cc352a021_6h
-    cc352b003_4h
-    cc354a049_8h
-    in these cases the first label will be used.]
-
-    ***NEW:
     Retrieving the label text file from the data set against a given file id
     example: Return cc16_366a_344322s_labels.txt for audio file cc16_366a_344322s_audio.wav
     """
@@ -34,11 +25,7 @@ def create_label_dataframe(label, begin_time, end_time, window_size, timesteps_p
                             names=['StartTime','Duration','Label'])
                             # index_col='Selection')
     if 'Label' in labels_df.columns:
-        # filter for any labels that do not start with definitive call type label
-        # call_labels = ['GIG', 'SQL', 'GRL', 'GRN', 'SQT', 'MOO', 'RUM', 'WHP']
-        # change labels to first 3 characters
         labels_df.Label = labels_df.Label.str[0:3]
-        # labels_df = labels_df[labels_df['Label'].isin(call_labels)]
         labels_df['Begin Time(t)'] = ((labels_df['StartTime'] - begin_time) * timesteps_per_second).apply(np.floor)
 
         labels_df['End Time(t)'] = ((labels_df['StartTime']+labels_df['Duration'] - begin_time) * timesteps_per_second).apply(np.floor)
@@ -104,31 +91,4 @@ def create_label_matrix(dataframe, timesteps):
             elif l[2] == 'WHP':
                 label[7][begin_t:end_t] = 1
             label[8][begin_t:end_t] = 0
-
     return label
-
-
-paths = ['/cache/rmishra/cc16_366a_converted/spectro/']
-base_dir = "/cache/rmishra/cc16_ML/cc16_366a"
-
-
-
-for path in paths:
-    if(os.path.exists(path)):
-        for f in os.listdir(path):
-            if 'LABEL' not in f:
-                label = find_label(f, base_dir)           #We dont have different duration files
-                begin_time = int(f.split('_')[-1].split('sto')[0])
-                end_time = int(f.split('_')[-1].split('sto')[1].split('s')[0])
-                window_size = end_time - begin_time
-                timesteps = 259  # need to set timesteps
-                timesteps_per_second = timesteps / window_size
-                df = create_label_dataframe(os.path.join(base_dir,label),
-                                            begin_time,
-                                            end_time,
-                                            window_size,
-                                            timesteps_per_second)
-                label_matrix = create_label_matrix(df, timesteps)
-                print("Saving file: {}".format(path + f[:-4] + 'LABEL'))
-                np.save(path + f[:-4] + 'LABEL', label_matrix)
-                np.savetxt(path + f[:-4] + 'LABEL', label_matrix, delimiter=",")
