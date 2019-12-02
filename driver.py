@@ -46,7 +46,7 @@ def main():
 
         for file in os.listdir(save_dir):
             filepath = os.path.join(save_dir, file)
-            y, sr = librosa.load(filepath)
+            y, sr = librosa.load(filepath, sr=None)     # librosa downsamples the audio signal to 22050 if not sr=None
             length = int(len(y) / sr)
             remainder = length % window_size
             for i in range(0, length - remainder - window_size, slide):
