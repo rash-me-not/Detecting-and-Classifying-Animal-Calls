@@ -11,7 +11,7 @@ import pickle
 from keras.models import load_model
 from keras.layers import Input
 from keras.models import Model 
-from keras.layers import Conv2D, MaxPooling2D, Activation, SeparableConv2D 
+from keras.layers import Conv2D, MaxPooling2D, Activation, SeparableConv2D, concatenate
 from keras.layers import Reshape, Permute
 from keras.layers import BatchNormalization, TimeDistributed, Dense, Dropout
 from keras.layers import GRU, Bidirectional, GlobalAveragePooling2D
@@ -20,7 +20,7 @@ from keras import optimizers
 from sklearn.metrics import roc_curve, auc
 from datetime import datetime
 
-def create_model(x_train, filters, gru_units, dense_neurons, dropout):
+def create_model(x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2, filters, gru_units, dense_neurons, dropout):
     """
     Outputs a non sequntial keras model
     filters = number of filters in each convolutional layer
@@ -28,18 +28,52 @@ def create_model(x_train, filters, gru_units, dense_neurons, dropout):
     dense_neurons = number of neurons in the time distributed dense layers
     dropout = dropout rate used throughout the model
     """
-    inp = Input(shape=(259, 64, 1))
-    c_1 = Conv2D(filters, (3,3), padding='same', activation='relu')(inp)
-    mp_1 = MaxPooling2D(pool_size=(1,5))(c_1)
-    c_2 = Conv2D(filters, (3,3), padding='same', activation='relu')(mp_1)
-    mp_2 = MaxPooling2D(pool_size=(1,2))(c_2)
-    c_3 = Conv2D(filters, (3,3), padding='same', activation='relu')(mp_2)
-    mp_3 = MaxPooling2D(pool_size=(1,2))(c_3)
+    inp_aud = Input(shape=(x_train_aud.shape[1], x_train_aud.shape[2], 1))
+    inp_acc_0 = Input(shape=(x_train_acc_ch0.shape[1], x_train_acc_ch0.shape[2], 1))
+    inp_acc_1 = Input(shape=(x_train_acc_ch1.shape[1], x_train_acc_ch1.shape[2], 1))
+    inp_acc_2 = Input(shape=(x_train_acc_ch2.shape[1], x_train_acc_ch2.shape[2], 1))
 
-    reshape_1 = Reshape((x_train.shape[-3], -1))(mp_3)
+    aud = Conv2D(filters, (3,3), padding='same', activation='relu')(inp_aud)
+    aud = MaxPooling2D(pool_size=(1,5))(aud)
+    aud = Conv2D(filters, (3,3), padding='same', activation='relu')(aud)
+    aud = MaxPooling2D(pool_size=(1,2))(aud)
+    aud = Conv2D(filters, (3,3), padding='same', activation='relu')(aud)
+    aud = MaxPooling2D(pool_size=(1,2))(aud)
+    aud = Reshape((x_train_aud.shape[-3], -1))(aud)
+    aud = Model(inputs=inp_aud, outputs=aud)
+
+
+    acc_0 = Conv2D(filters, (3,3), padding='same', activation='relu')(inp_acc_0)
+    acc_0 = MaxPooling2D(pool_size=(1,5))(acc_0)
+    acc_0 = Conv2D(filters, (3,3), padding='same', activation='relu')(acc_0)
+    acc_0 = MaxPooling2D(pool_size=(1,2))(acc_0)
+    acc_0 = Conv2D(filters, (3,3), padding='same', activation='relu')(acc_0)
+    acc_0 = MaxPooling2D(pool_size=(1,2))(acc_0)
+    acc_0 = Reshape((x_train_acc_ch0.shape[-3], -1))(acc_0)
+    acc_0 = Model(inputs=inp_acc_0, outputs=acc_0)
+
+    acc_1 = Conv2D(filters, (3,3), padding='same', activation='relu')(inp_acc_1)
+    acc_1 = MaxPooling2D(pool_size=(1,5))(acc_1)
+    acc_1 = Conv2D(filters, (3,3), padding='same', activation='relu')(acc_1)
+    acc_1 = MaxPooling2D(pool_size=(1,2))(acc_1)
+    acc_1 = Conv2D(filters, (3,3), padding='same', activation='relu')(acc_1)
+    acc_1 = MaxPooling2D(pool_size=(1,2))(acc_1)
+    acc_1 = Reshape((x_train_acc_ch0.shape[-3], -1))(acc_1)
+    acc_1 = Model(inputs=inp_acc_1, outputs=acc_1)
+
+    acc_2 = Conv2D(filters, (3,3), padding='same', activation='relu')(inp_acc_2)
+    acc_2 = MaxPooling2D(pool_size=(1,5))(acc_2)
+    acc_2 = Conv2D(filters, (3,3), padding='same', activation='relu')(acc_2)
+    acc_2 = MaxPooling2D(pool_size=(1,2))(acc_2)
+    acc_2 = Conv2D(filters, (3,3), padding='same', activation='relu')(acc_2)
+    acc_2 = MaxPooling2D(pool_size=(1,2))(acc_2)
+    acc_2 = Reshape((x_train_acc_ch0.shape[-3], -1))(acc_2)
+    acc_2 = Model(inputs=inp_acc_2, outputs=acc_2)
+
+    combined = concatenate([aud.output, acc_0.output, acc_1.output, acc_2.output])
 
     rnn_1 = Bidirectional(GRU(units=gru_units, activation='tanh', dropout=dropout, 
-                              recurrent_dropout=dropout, return_sequences=True), merge_mode='mul')(reshape_1)
+                              recurrent_dropout=dropout, return_sequences=True), merge_mode='mul')(combined)
     rnn_2 = Bidirectional(GRU(units=gru_units, activation='tanh', dropout=dropout, 
                               recurrent_dropout=dropout, return_sequences=True), merge_mode='mul')(rnn_1)
     
@@ -49,8 +83,8 @@ def create_model(x_train, filters, gru_units, dense_neurons, dropout):
     drop_2 = Dropout(rate=dropout)(dense_2)
     dense_3 = TimeDistributed(Dense(dense_neurons, activation='relu'))(drop_2)
     drop_3 = Dropout(rate=dropout)(dense_3)
-    output = TimeDistributed(Dense(9, activation='softmax'))(drop_3)
-    model = Model(inp, output)
+    output = TimeDistributed(Dense(9, activation='sigmoid'))(drop_3)
+    model = Model(inputs=[aud.input, acc_0.input, acc_1.input, acc_2.input], outputs=output)
     return model
 
 
@@ -59,11 +93,6 @@ def save_folder(date_time):
     time_now = str(date_time.time())
     sf = "saved_models/model_" + date_now + "_" + time_now + "_" + os.path.basename(__file__).split('.')[0]
     return sf
-
-
-def create_save_folder(save_folder):  
-    if not os.path.isdir(save_folder):
-        os.makedirs(save_folder)
 
         
 def save_model(save_folder, model, model_fit):

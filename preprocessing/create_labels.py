@@ -92,3 +92,10 @@ def create_label_matrix(dataframe, timesteps):
                 label[7][begin_t:end_t] = 1
             label[8][begin_t:end_t] = 0
     return label
+
+def save_label_file(label_matrix, spec_path, spec_file):
+        # Saving the one hot encoded Label file if there is at least one call present in the 6 sec segment
+        label_path = os.path.join(spec_path, spec_file + 'LABEL')
+        print("Saving file: {}".format(label_path))
+        np.save(label_path, label_matrix)
+        np.savetxt(label_path, label_matrix, delimiter=",")

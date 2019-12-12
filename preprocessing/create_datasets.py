@@ -19,14 +19,16 @@ def get_data(features, labels, files, indices):
 
 def get_feature_labels_files(dataset):
     """Returns features, labels and files from a given dataset"""
-    dataset = np.asarray(dataset)
     features = []
     labels = []
     files = []
     for frame in dataset:
         files.append(frame[0])
         features.append(frame[1][0].T)
-        labels.append(frame[1][1].T)
+        if frame[1][1] is not None:
+            labels.append(frame[1][1].T)
+        else:
+            labels.append(None)
     features = np.expand_dims(np.asarray(features), 4)
     labels = np.asarray(labels)
     return [features, labels, files]

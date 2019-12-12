@@ -6,7 +6,10 @@ import shutil
 def fetch_files_with_numcalls(base_dir, min_num_of_calls):
     """
     Returns a list of files from the base audio directory with given minimum number of hyena calls
-    The file list consists of 'file_identifier', 'filename', 'file_type' (wav, text).
+    The result contains the list of file_identifiers, along with their values for different file types
+    In our project, we have 4 file types associated with every id, i.e. the accelerometer data, audio data, label file and the call file
+    Example: file id cc16_352a_14401s has value cc16_352a_14401s_acc.wav, cc16_352a_14401s_audio.wav,
+    cc16_352a_14401s_calls.txt and cc16_352a_14401s_labels.txt
     """
     file_list = pd.DataFrame(columns=['file_identifier', 'filename', 'file_type'])
     for dir, _subdirs, files in os.walk(base_dir):
