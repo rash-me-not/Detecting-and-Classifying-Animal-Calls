@@ -33,7 +33,7 @@ class HyenaCallDetection:
         self.combined_dir = os.path.join(base_dir, 'combined')
 
     def main(self):
-        hyena_data = ['cc16_352a', 'cc16_352b', 'cc16_366a', 'cc16_354a', 'cc16_360a']
+        hyena_data = ['cc16_352a', 'cc16_352b', 'cc16_354a', 'cc16_360a', 'cc16_366a']
 
         for hyena_recording in hyena_data:
 
@@ -44,12 +44,12 @@ class HyenaCallDetection:
 
             hyena_rec_converted = os.path.join(self.base_dir, hyena_recording + '_converted')
 
-            for file_aud, file_acc in zip(file_list['audio'], file_list['acc']):
-                self.save_spec(os.path.join(audio_path, file_aud), hyena_rec_converted, audio_path)
-                self.save_spec(os.path.join(audio_path, file_acc), hyena_rec_converted, audio_path)
+            # for file_aud, file_acc in zip(file_list['audio'], file_list['acc']):
+            #     self.save_spec(os.path.join(audio_path, file_aud), hyena_rec_converted, audio_path)
+            #     self.save_spec(os.path.join(audio_path, file_acc), hyena_rec_converted, audio_path)
 
 
-        self.save_dataset();
+        # self.save_dataset();
         print("Saved dataset")
 
         x_train_aud = np.load("/cache/rmishra/dataset/dataset_aud/x_train.npy")
@@ -57,14 +57,16 @@ class HyenaCallDetection:
         x_train_acc_ch1 = np.load("/cache/rmishra/dataset/dataset_acc_ch_1/x_train.npy")
         x_train_acc_ch2 = np.load("/cache/rmishra/dataset/dataset_acc_ch_2/x_train.npy")
 
-        y_train_aud = np.load("/cache/rmishra/dataset/dataset_aud/y_train.npy")
+        y_train_aud = np.load("/cache/rmishra/dataset/dataset_aud/y_train_aud.npy")
+        y_train_foc = np.load("/cache/rmishra/dataset/dataset_aud/y_train_foc.npy")
 
         x_val_aud = np.load("/cache/rmishra/dataset/dataset_aud/x_val.npy")
         x_val_acc_ch0 = np.load("/cache/rmishra/dataset/dataset_acc_ch_0/x_val.npy")
         x_val_acc_ch1 = np.load("/cache/rmishra/dataset/dataset_acc_ch_1/x_val.npy")
         x_val_acc_ch2 = np.load("/cache/rmishra/dataset/dataset_acc_ch_2/x_val.npy")
 
-        y_val_aud = np.load("/cache/rmishra/dataset/dataset_aud/y_val.npy")
+        y_val_aud = np.load("/cache/rmishra/dataset/dataset_aud/y_val_aud.npy")
+        y_val_foc = np.load("/cache/rmishra/dataset/dataset_aud/y_val_foc.npy")
 
         print("Creating model")
         # Train the RCNN model
@@ -81,16 +83,16 @@ class HyenaCallDetection:
                                            mode='auto', min_delta=0.0001, cooldown=0, min_lr=0.000001)
 
         print("TRaining model")
-        model_fit = model.fit([x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2], y_train_aud,
+        model_fit = model.fit([x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2], [y_train_aud, y_train_foc],
                               epochs=epochs, batch_size=batch_size,
-                              validation_data=([x_val_aud, x_val_acc_ch0, x_val_acc_ch1, x_val_acc_ch2], y_val_aud),
+                              validation_data=([x_val_aud, x_val_acc_ch0, x_val_acc_ch1, x_val_acc_ch2], [y_val_aud, y_val_foc]),
                               shuffle=True,
                               callbacks=[early_stopping, reduce_lr_plat])
 
         # model_fit = load_model('saved_models/model_2019-11-17_03:19:50.898753_network_train/savedmodel.h5')
         #
-        # with open('saved_models/model_2019-11-17_03:19:50.898753_network_train/history.pickle', 'rb') as handle:  # loading old history
-        #     history = pickle.load(handle)
+        # # with open('saved_models/model_2019-11-17_03:19:50.898753_network_train/history.pickle', 'rb') as handle:  # loading old history
+        # #     history = pickle.load(handle)
         print("MOdel TRained")
         date_time = datetime.datetime.now()
         sf = save_folder(date_time)
@@ -103,8 +105,8 @@ class HyenaCallDetection:
 
         plot_accuracy(model_fit, sf)
         plot_loss(model_fit, sf)
-        plot_ROC(model, [x_val_aud, x_val_acc_ch0, x_val_acc_ch1, x_val_acc_ch2], y_val_aud, sf)
-        plot_class_ROC(model, [x_val_aud, x_val_acc_ch0, x_val_acc_ch1, x_val_acc_ch2], y_val_aud, sf)
+        # plot_ROC(model, [x_val_aud, x_val_acc_ch0, x_val_acc_ch1, x_val_acc_ch2], y_val_aud, sf)
+        # plot_class_ROC(model, [x_val_aud, x_val_acc_ch0, x_val_acc_ch1, x_val_acc_ch2], y_val_aud, sf)
         save_arch(model, sf)
 
     def save_spec(self, filepath, converted_dir, audio_path):
@@ -135,10 +137,10 @@ class HyenaCallDetection:
 
                 # fetch the label txt file against the file identifier and create a label dataframe for calls between
                 # the start and end timestamp
-                label = fetch_files_with_numcalls(audio_path, 1).loc[file]['labels']
+                call = fetch_files_with_numcalls(audio_path, 1).loc[file]['calls']
                 timesteps = s_db.shape[1]
                 timesteps_per_second = timesteps / self.window_size
-                df = create_label_dataframe(os.path.join(audio_path, label),
+                df = create_label_dataframe(os.path.join(audio_path, call),
                                             begin_time,
                                             end_time,
                                             self.window_size,
@@ -147,7 +149,7 @@ class HyenaCallDetection:
                 # one hot encoding the label information for the audio data in a spec frame
                 label_matrix = create_label_matrix(df, timesteps)
 
-                if 1 in label_matrix[0:8, :]:
+                if 1 in label_matrix[0][:8, :]:
                     print("Saving spectrogram: " + filepath + " " + str(begin_time) + " to " + str(end_time))
                     file_type.save_spec_label(s_db, begin_time, end_time, file, label_matrix)
 
@@ -169,13 +171,13 @@ class HyenaCallDetection:
             train_ratio = 0.75
             val_ratio = 0.15
             train_test_data = get_train_val_test(dataset, train_ratio, val_ratio)
-            x_train, y_train, train_files = train_test_data.get("train")
-            x_val, y_val, val_files = train_test_data.get("val")
-            x_test, y_test, test_files = train_test_data.get("test")
+            x_train, y_train_aud, y_train_foc, train_files = train_test_data.get("train")
+            x_val, y_val_aud, y_val_foc, val_files = train_test_data.get("val")
+            x_test, y_test_aud, y_test_foc, test_files = train_test_data.get("test")
 
-            dataset_fname_dict = {'x_train': x_train, 'y_train': y_train, 'train_files': train_files,
-                                  'x_val': x_val, 'y_val': y_val, 'val_files': val_files,
-                                  'x_test': x_test, 'y_test': y_test, 'test_files': test_files }
+            dataset_fname_dict = {'x_train': x_train, 'y_train_aud': y_train_aud, 'y_train_foc': y_train_foc, 'train_files': train_files,
+                                  'x_val': x_val, 'y_val_aud': y_val_aud, 'y_val_foc': y_val_foc, 'val_files': val_files,
+                                  'x_test': x_test, 'y_test_aud': y_test_aud, 'y_test_foc': y_test_foc, 'test_files': test_files }
 
             for fname, file in dataset_fname_dict.items():
                 if all(elem is not None for elem in file):

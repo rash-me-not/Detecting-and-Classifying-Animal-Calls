@@ -9,7 +9,7 @@ import tensorflow as tf
 import sys
 import pickle
 from keras.models import load_model
-from keras.layers import Input
+from keras.layers import Input, Flatten
 from keras.models import Model 
 from keras.layers import Conv2D, MaxPooling2D, Activation, SeparableConv2D, concatenate
 from keras.layers import Reshape, Permute
@@ -72,6 +72,13 @@ def create_model(x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2,
 
     combined = concatenate([aud.output, acc_0.output, acc_1.output, acc_2.output])
 
+    # flattened = Flatten()(combined)
+    # dense_foctype_1 = Dense(dense_neurons, activation='relu')(flattened)
+    # drop_foctype_1 = Dropout(rate=dropout)(dense_foctype_1)
+    # dense_foctype_2 = Dense(dense_neurons, activation='relu')(drop_foctype_1)
+    # drop_foctype_2 = Dropout(rate=dropout)(dense_foctype_2)
+    # output_foctype = Dense(3, activation='softmax')(drop_foctype_2)
+
     rnn_1 = Bidirectional(GRU(units=gru_units, activation='tanh', dropout=dropout, 
                               recurrent_dropout=dropout, return_sequences=True), merge_mode='mul')(combined)
     rnn_2 = Bidirectional(GRU(units=gru_units, activation='tanh', dropout=dropout, 
@@ -83,8 +90,9 @@ def create_model(x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2,
     drop_2 = Dropout(rate=dropout)(dense_2)
     dense_3 = TimeDistributed(Dense(dense_neurons, activation='relu'))(drop_2)
     drop_3 = Dropout(rate=dropout)(dense_3)
-    output = TimeDistributed(Dense(9, activation='sigmoid'))(drop_3)
-    model = Model(inputs=[aud.input, acc_0.input, acc_1.input, acc_2.input], outputs=output)
+    output_aud = TimeDistributed(Dense(9, activation='sigmoid'))(drop_3)
+    output_foctype = Dense(3, activation='softmax')(drop_3)
+    model = Model(inputs=[aud.input, acc_0.input, acc_1.input, acc_2.input], outputs=[output_aud,output_foctype])
     return model
 
 
