@@ -10,7 +10,8 @@ from keras.models import load_model
 import tensorflow as tf
 from AccelerometerFile import AccelerometerFile
 from AudioFile import AudioFile
-from network.network_train import create_model, save_model, plot_accuracy, plot_loss, plot_ROC, plot_class_ROC, \
+from network.network_train import create_model, create_model_using_z_axis, save_model, plot_accuracy, plot_loss, \
+    plot_ROC, plot_class_ROC, \
     save_arch, save_folder
 from preprocessing.create_data_groups import fetch_files_with_numcalls
 from preprocessing.create_spectrograms import get_spectrogram
@@ -40,7 +41,7 @@ class HyenaCallDetection:
             # Fetch all the audio data with greater than 1 hyena call
             audio_path = os.path.join(self.base_dir, 'cc16_ML',
                                       hyena_recording)  # audio_path:'/cache/rmishra/cc16_ML/cc16_352a'
-            file_list = fetch_files_with_numcalls(audio_path, 1)
+            # file_list = fetch_files_with_numcalls(audio_path, 1)
 
             hyena_rec_converted = os.path.join(self.base_dir, hyena_recording + '_converted')
 
@@ -70,22 +71,31 @@ class HyenaCallDetection:
 
         print("Creating model")
         # Train the RCNN model
-        model = create_model(x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2,
+        # model = create_model(x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2,
+        #                      filters=128, gru_units=128, dense_neurons=1024, dropout=0.5)
+
+        model = create_model_using_z_axis(x_train_aud, x_train_acc_ch2,
                              filters=128, gru_units=128, dense_neurons=1024, dropout=0.5)
 
         print(model.summary())
         adam = optimizers.Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
         model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['binary_accuracy'])
-        epochs = 20
+        epochs = 1
         batch_size = 32
         early_stopping = EarlyStopping(monitor='val_loss', patience=100, restore_best_weights=True, verbose=1)
         reduce_lr_plat = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=25, verbose=1,
                                            mode='auto', min_delta=0.0001, cooldown=0, min_lr=0.000001)
 
         print("TRaining model")
-        model_fit = model.fit([x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2], [y_train_aud, y_train_foc],
+        # model_fit = model.fit([x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2], [y_train_aud, y_train_foc],
+        #                       epochs=epochs, batch_size=batch_size,
+        #                       validation_data=([x_val_aud, x_val_acc_ch0, x_val_acc_ch1, x_val_acc_ch2], [y_val_aud, y_val_foc]),
+        #                       shuffle=True,
+        #                       callbacks=[early_stopping, reduce_lr_plat])
+
+        model_fit = model.fit([x_train_aud, x_train_acc_ch2], [y_train_aud, y_train_foc],
                               epochs=epochs, batch_size=batch_size,
-                              validation_data=([x_val_aud, x_val_acc_ch0, x_val_acc_ch1, x_val_acc_ch2], [y_val_aud, y_val_foc]),
+                              validation_data=([x_val_aud, x_val_acc_ch2], [y_val_aud, y_val_foc]),
                               shuffle=True,
                               callbacks=[early_stopping, reduce_lr_plat])
 
