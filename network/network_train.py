@@ -39,7 +39,7 @@ def create_model(x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2,
     aud = MaxPooling2D(pool_size=(1,2))(aud)
     aud = Conv2D(filters, (3,3), padding='same', activation='relu')(aud)
     aud = MaxPooling2D(pool_size=(1,2))(aud)
-    aud = Reshape((x_train_aud.shape[-3], -1))(aud)
+    # aud = Reshape((x_train_aud.shape[-3], -1))(aud)
     aud = Model(inputs=inp_aud, outputs=aud)
 
 
@@ -49,7 +49,7 @@ def create_model(x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2,
     acc_0 = MaxPooling2D(pool_size=(1,2))(acc_0)
     acc_0 = Conv2D(filters, (3,3), padding='same', activation='relu')(acc_0)
     acc_0 = MaxPooling2D(pool_size=(1,2))(acc_0)
-    acc_0 = Reshape((x_train_acc_ch0.shape[-3], -1))(acc_0)
+    # acc_0 = Reshape((x_train_acc_ch0.shape[-3], -1))(acc_0)
     acc_0 = Model(inputs=inp_acc_0, outputs=acc_0)
 
     acc_1 = Conv2D(filters, (3,3), padding='same', activation='relu')(inp_acc_1)
@@ -58,7 +58,7 @@ def create_model(x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2,
     acc_1 = MaxPooling2D(pool_size=(1,2))(acc_1)
     acc_1 = Conv2D(filters, (3,3), padding='same', activation='relu')(acc_1)
     acc_1 = MaxPooling2D(pool_size=(1,2))(acc_1)
-    acc_1 = Reshape((x_train_acc_ch0.shape[-3], -1))(acc_1)
+    # acc_1 = Reshape((x_train_acc_ch0.shape[-3], -1))(acc_1)
     acc_1 = Model(inputs=inp_acc_1, outputs=acc_1)
 
     acc_2 = Conv2D(filters, (3,3), padding='same', activation='relu')(inp_acc_2)
@@ -67,17 +67,17 @@ def create_model(x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2,
     acc_2 = MaxPooling2D(pool_size=(1,2))(acc_2)
     acc_2 = Conv2D(filters, (3,3), padding='same', activation='relu')(acc_2)
     acc_2 = MaxPooling2D(pool_size=(1,2))(acc_2)
-    acc_2 = Reshape((x_train_acc_ch0.shape[-3], -1))(acc_2)
+    # acc_2 = Reshape((x_train_acc_ch0.shape[-3], -1))(acc_2)
     acc_2 = Model(inputs=inp_acc_2, outputs=acc_2)
 
     combined = concatenate([aud.output, acc_0.output, acc_1.output, acc_2.output])
 
-    # flattened = Flatten()(combined)
-    # dense_foctype_1 = Dense(dense_neurons, activation='relu')(flattened)
-    # drop_foctype_1 = Dropout(rate=dropout)(dense_foctype_1)
-    # dense_foctype_2 = Dense(dense_neurons, activation='relu')(drop_foctype_1)
-    # drop_foctype_2 = Dropout(rate=dropout)(dense_foctype_2)
-    # output_foctype = Dense(3, activation='softmax')(drop_foctype_2)
+    combined = Reshape((x_train_aud.shape[-3], -1))(combined)
+    dense_foctype_1 = TimeDistributed(Dense(dense_neurons, activation='relu'))(combined)
+    drop_foctype_1 = Dropout(rate=dropout)(dense_foctype_1)
+    dense_foctype_2 = TimeDistributed(Dense(dense_neurons, activation='relu'))(drop_foctype_1)
+    drop_foctype_2 = Dropout(rate=dropout)(dense_foctype_2)
+    output_foctype = TimeDistributed(Dense(3, activation='softmax'))(drop_foctype_2)
 
     rnn_1 = Bidirectional(GRU(units=gru_units, activation='tanh', dropout=dropout, 
                               recurrent_dropout=dropout, return_sequences=True), merge_mode='mul')(combined)
@@ -91,7 +91,7 @@ def create_model(x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2,
     dense_3 = TimeDistributed(Dense(dense_neurons, activation='relu'))(drop_2)
     drop_3 = Dropout(rate=dropout)(dense_3)
     output_aud = TimeDistributed(Dense(9, activation='sigmoid'))(drop_3)
-    output_foctype = Dense(3, activation='softmax')(drop_3)
+    # output_foctype = Dense(3, activation='softmax')(drop_3)
     model = Model(inputs=[aud.input, acc_0.input, acc_1.input, acc_2.input], outputs=[output_aud,output_foctype])
     return model
 
