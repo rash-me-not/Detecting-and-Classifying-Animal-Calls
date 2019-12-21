@@ -16,14 +16,15 @@ config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 tf.Session(config=config)
 
-model = load_model('/mar/home/rmishra/PycharmProjects/Detecting-and-Classifying-Animal-Calls/saved_models/model_2019-12-12_08:14:23.198595_network_train/savedmodel.h5')
+model = load_model('/mar/home/rmishra/PycharmProjects/Detecting-and-Classifying-Animal-Calls/saved_models/model_2019-12-20_17:20:31.313160_network_train/savedmodel.h5')
 
 x_test_aud = np.load("/cache/rmishra/dataset/dataset_aud/x_test.npy")
 x_test_acc_ch0 = np.load("/cache/rmishra/dataset/dataset_acc_ch_0/x_test.npy")
 x_test_acc_ch1 = np.load("/cache/rmishra/dataset/dataset_acc_ch_1/x_test.npy")
 x_test_acc_ch2 = np.load("/cache/rmishra/dataset/dataset_acc_ch_2/x_test.npy")
 
-y_test = np.load('/cache/rmishra/dataset/dataset_aud/y_test.npy')
+y_test_aud = np.load('/cache/rmishra/dataset/dataset_aud/y_test_aud.npy')
+y_test_foc = np.load('/cache/rmishra/dataset/dataset_aud/y_test_foc.npy')
 test_files = np.load('/cache/rmishra/dataset/dataset_aud/test_files.npy')
 
 

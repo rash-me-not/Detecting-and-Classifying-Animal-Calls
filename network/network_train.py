@@ -72,12 +72,14 @@ def create_model(x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2,
 
     combined = concatenate([aud.output, acc_0.output, acc_1.output, acc_2.output])
 
-    combined = Reshape((x_train_aud.shape[-3], -1))(combined)
-    dense_foctype_1 = TimeDistributed(Dense(dense_neurons, activation='relu'))(combined)
+    flattened = Flatten()(combined)
+    dense_foctype_1 = Dense(dense_neurons, activation='relu')(flattened)
     drop_foctype_1 = Dropout(rate=dropout)(dense_foctype_1)
-    dense_foctype_2 = TimeDistributed(Dense(dense_neurons, activation='relu'))(drop_foctype_1)
+    dense_foctype_2 = Dense(dense_neurons, activation='relu')(drop_foctype_1)
     drop_foctype_2 = Dropout(rate=dropout)(dense_foctype_2)
-    output_foctype = TimeDistributed(Dense(3, activation='softmax'))(drop_foctype_2)
+    output_foctype = Dense(3, activation='softmax')(drop_foctype_2)
+
+    combined = Reshape((x_train_aud.shape[-3], -1))(combined)
 
     rnn_1 = Bidirectional(GRU(units=gru_units, activation='tanh', dropout=dropout, 
                               recurrent_dropout=dropout, return_sequences=True), merge_mode='mul')(combined)
@@ -113,7 +115,7 @@ def save_model(save_folder, model, model_fit):
 
 
 def plot_accuracy(model_fit, save_folder, history=None):
-    """
+    """l
     Output: Plots and saves graph of accuracy at each epoch. 
     """
 
