@@ -52,21 +52,21 @@ class HyenaCallDetection:
         # self.save_dataset();
         print("Saved dataset")
 
-        x_train_aud = np.load("/cache/rmishra/dataset/dataset_aud/x_train.npy")
-        x_train_acc_ch0 = np.load("/cache/rmishra/dataset/dataset_acc_ch_0/x_train.npy")
-        x_train_acc_ch1 = np.load("/cache/rmishra/dataset/dataset_acc_ch_1/x_train.npy")
-        x_train_acc_ch2 = np.load("/cache/rmishra/dataset/dataset_acc_ch_2/x_train.npy")
+        x_train_aud = np.load(os.path.join(self.dataset_dir,"dataset_aud/x_train.npy"));
+        x_train_acc_ch0 = np.load(os.path.join(self.dataset_dir,"dataset_acc_ch_0/x_train.npy"))
+        x_train_acc_ch1 = np.load(os.path.join(self.dataset_dir,"dataset_acc_ch_1/x_train.npy"))
+        x_train_acc_ch2 = np.load(os.path.join(self.dataset_dir,"dataset_acc_ch_2/x_train.npy"))
 
-        y_train_aud = np.load("/cache/rmishra/dataset/dataset_aud/y_train_aud.npy")
-        y_train_foc = np.load("/cache/rmishra/dataset/dataset_aud/y_train_foc.npy")
+        y_train_aud = np.load(os.path.join(self.dataset_dir,"dataset_aud/y_train_aud.npy"))
+        y_train_foc = np.load(os.path.join(self.dataset_dir, "dataset_aud/y_train_foc.npy"))
 
-        x_val_aud = np.load("/cache/rmishra/dataset/dataset_aud/x_val.npy")
-        x_val_acc_ch0 = np.load("/cache/rmishra/dataset/dataset_acc_ch_0/x_val.npy")
-        x_val_acc_ch1 = np.load("/cache/rmishra/dataset/dataset_acc_ch_1/x_val.npy")
-        x_val_acc_ch2 = np.load("/cache/rmishra/dataset/dataset_acc_ch_2/x_val.npy")
+        x_val_aud = np.load(os.path.join(self.dataset_dir,"dataset_aud/x_val.npy"))
+        x_val_acc_ch0 = np.load(os.path.join(self.dataset_dir,"dataset_acc_ch_0/x_val.npy"))
+        x_val_acc_ch1 = np.load(os.path.join(self.dataset_dir,"dataset_acc_ch_1/x_val.npy"))
+        x_val_acc_ch2 = np.load(os.path.join(self.dataset_dir,"dataset_acc_ch_2/x_val.npy"))
 
-        y_val_aud = np.load("/cache/rmishra/dataset/dataset_aud/y_val_aud.npy")
-        y_val_foc = np.load("/cache/rmishra/dataset/dataset_aud/y_val_foc.npy")
+        y_val_aud = np.load(os.path.join(self.dataset_dir,"dataset_aud/y_val_aud.npy"))
+        y_val_foc = np.load(os.path.join(self.dataset_dir,"dataset_aud/y_val_foc.npy"))
 
         print("Creating model")
         # Train the RCNN model
@@ -188,7 +188,7 @@ class HyenaCallDetection:
             os.makedirs(save_folder)
 
 if __name__ == "__main__":
-    base_dir = "/cache/rmishra"
+    base_dir = "D:\Rashmita"
     spec_window_size = 6
     slide = 3
 
