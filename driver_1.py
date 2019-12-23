@@ -80,7 +80,7 @@ class HyenaCallDetection:
         print(model.summary())
         adam = optimizers.Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
         model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['binary_accuracy'])
-        epochs = 1
+        epochs = 20
         batch_size = 32
         early_stopping = EarlyStopping(monitor='val_loss', patience=100, restore_best_weights=True, verbose=1)
         reduce_lr_plat = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=25, verbose=1,
@@ -99,13 +99,13 @@ class HyenaCallDetection:
                               shuffle=True,
                               callbacks=[early_stopping, reduce_lr_plat])
 
-        # model_fit = load_model('saved_models/model_2019-11-17_03:19:50.898753_network_train/savedmodel.h5')
+        # model_fit = load_model('saved_models/model_2019-12-20_23_11_18.945084_network_train/savedmodel.h5')
         #
-        # # with open('saved_models/model_2019-11-17_03:19:50.898753_network_train/history.pickle', 'rb') as handle:  # loading old history
-        # #     history = pickle.load(handle)
+        # with open('saved_models/model_2019-12-20_23_11_18.945084_network_train/history.pickle', 'rb') as handle:  # loading old history
+        #     history = pickle.load(handle)
         print("MOdel TRained")
         date_time = datetime.datetime.now()
-        sf = save_folder(date_time)
+        sf = save_folder(date_time).replace(":", "_")
         self.create_save_folder(sf)
 
         print("Saving Model")
@@ -115,8 +115,8 @@ class HyenaCallDetection:
 
         plot_accuracy(model_fit, sf)
         plot_loss(model_fit, sf)
-        # plot_ROC(model, [x_val_aud, x_val_acc_ch0, x_val_acc_ch1, x_val_acc_ch2], y_val_aud, sf)
-        # plot_class_ROC(model, [x_val_aud, x_val_acc_ch0, x_val_acc_ch1, x_val_acc_ch2], y_val_aud, sf)
+        plot_ROC(model, [x_val_aud, x_val_acc_ch2], y_val_aud, sf)
+        # plot_class_ROC(model, [x_val_aud, x_val_acc_ch2], y_val_aud, sf)
         save_arch(model, sf)
 
     def save_spec(self, filepath, converted_dir, audio_path):

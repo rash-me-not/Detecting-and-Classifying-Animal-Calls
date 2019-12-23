@@ -175,20 +175,26 @@ def save_model(save_folder, model, model_fit):
 
 def plot_accuracy(model_fit, save_folder, history=None):
     """l
-    Output: Plots and saves graph of accuracy at each epoch. 
+    Output: Plots and saves graph of accuracy at each epoch.
     """
 
-    train_acc = history['binary_accuracy'] if history is not None else model_fit.history['binary_accuracy']
-    val_acc = history['val_binary_accuracy'] if history is not None else model_fit.history['val_binary_accuracy']
-    epoch_axis = np.arange(1, len(train_acc) + 1)
-    plt.title('Train vs Validation Accuracy')
-    plt.plot(epoch_axis, train_acc, 'b', label='Train Acc')
-    plt.plot(epoch_axis, val_acc, 'r', label='Val Acc')
-    plt.xlim([1, len(train_acc)])
-    plt.xticks(np.arange(min(epoch_axis), max(epoch_axis) + 1, round((len(train_acc) / 10) + 0.5)))
-    plt.legend(loc='lower right')
-    plt.ylabel('Accuracy')
-    plt.xlabel('Epochs')
+    train_accuracy_names  = ['time_distributed_3_binary_accuracy', 'time_distributed_7_binary_accuracy']
+    val_accuracy_names  = ['val_time_distributed_3_binary_accuracy','val_time_distributed_7_binary_accuracy']
+    plot_titles = ['Call Types', 'Focal Types']
+    (fig, ax) = plt.subplots(2,1, figsize=(8,8))
+    for idx, (train_binary_acc, val_binary_acc, plot_title) in enumerate(zip(train_accuracy_names, val_accuracy_names,
+                                                                      plot_titles)):
+        train_acc = history[train_binary_acc] if history is not None else model_fit.history[train_binary_acc]
+        val_acc = history[val_binary_acc] if history is not None else model_fit.history[val_binary_acc]
+        epoch_axis = np.arange(1, len(train_acc) + 1)
+        ax[idx].set_title('Train vs Validation Accuracy for '+plot_title)
+        ax[idx].plot(epoch_axis, train_acc, 'b', label='Train Acc')
+        ax[idx].plot(epoch_axis, val_acc, 'r', label='Val Acc')
+        ax[idx].set_xlim([1, len(train_acc)])
+        ax[idx].set_xticks(np.arange(min(epoch_axis), max(epoch_axis) + 1, round((len(train_acc) / 10) + 0.5)))
+        ax[idx].legend(loc='lower right')
+        ax[idx].set_ylabel('Accuracy')
+        ax[idx].set_xlabel('Epochs')
     plt.savefig(save_folder + '/accuracy.png')
     plt.show()
     plt.close()
@@ -221,7 +227,7 @@ def plot_ROC(model, x_val, y_val, save_folder):
     for the validation set.
     """
 
-    predicted = model.predict(x_val).ravel()
+    predicted = model.predict(x_val)[0].ravel()
     actual = y_val.ravel()
     fpr, tpr, thresholds = roc_curve(actual, predicted, pos_label=None)
     roc_auc = auc(fpr, tpr)
@@ -245,7 +251,7 @@ def plot_class_ROC(model, x_val, y_val, save_folder):
     """
     class_names = ['GIG', 'SQL', 'GRL', 'GRN', 'SQT', 'MOO', 'RUM', 'WHP', 'OTH']
     for i in range(len(class_names)):
-        predicted = model.predict(x_val)[:, :, i].ravel()
+        predicted = model.predict(x_val)[0][:, :, i].ravel()
         actual = y_val[:, :, i].ravel()
         fpr, tpr, thresholds = roc_curve(actual, predicted, pos_label=None)
         roc_auc = auc(fpr, tpr)
