@@ -70,6 +70,8 @@ def plot_fragments(fragments,label):
     plt.scatter(np.arange(samples), fragments)
     plt.xticks(np.arange(samples, step=100))
     plt.title("Fragment Count for label: "+label)
+    plt.ylabel("Number of Fragments")
+    plt.xlabel("Total Number of Test data samples")
     plt.savefig('Fragement_' + label + '.png')
     plt.show()
     plt.close()
