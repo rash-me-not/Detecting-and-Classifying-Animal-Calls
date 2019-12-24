@@ -31,7 +31,8 @@ class AudioFile(FileType):
         self.create_save_folder(label_path)
         print("Saving file: {}".format(os.path.join(label_path, label_file)))
         np.save(os.path.join(label_path, label_file), label_matrix)
-        np.savetxt(os.path.join(label_path, label_file), label_matrix, delimiter=",")
+        np.savetxt(os.path.join(label_path, label_file + '_aud'), label_matrix[0], delimiter=",")
+        np.savetxt(os.path.join(label_path, label_file + '_foctype'), label_matrix[1], delimiter=",")
         combined_file = spec_file + 'SPEC_LAB'
         self.save_combined(combined_file, s_db, label_matrix)
 

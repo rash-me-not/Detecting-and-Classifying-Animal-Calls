@@ -9,29 +9,34 @@ def get_random_idx(features, seed):
     return indices
 
 
-def get_data(features, labels, files, indices):
+def get_data(features, labels_aud, labels_foc, files, indices):
     """Return features, labels and files at given indices """
     features = [features[idx] for idx in indices]
-    labels = [labels[idx] for idx in indices]
+    labels_aud = [labels_aud[idx] for idx in indices]
+    labels_foc = [labels_foc[idx] for idx in indices]
     files = [files[idx] for idx in indices]
-    return features, labels, files
+    return features, labels_aud, labels_foc, files
 
 
 def get_feature_labels_files(dataset):
-    """Returns features, labels and files from a given dataset"""
+    """Returns features, audio_labels, focal_labels and files from a given dataset"""
     features = []
-    labels = []
+    audio_labels = []
+    focal_labels = []
     files = []
     for frame in dataset:
         files.append(frame[0])
         features.append(frame[1][0].T)
         if frame[1][1] is not None:
-            labels.append(frame[1][1].T)
+            audio_labels.append(frame[1][1][0].T)
+            focal_labels.append(frame[1][1][1].T)
         else:
-            labels.append(None)
+            audio_labels.append(None)
+            focal_labels.append(None)
     features = np.expand_dims(np.asarray(features), 4)
-    labels = np.asarray(labels)
-    return [features, labels, files]
+    audio_labels = np.asarray(audio_labels)
+    focal_labels = np.asarray(focal_labels)
+    return [features, audio_labels,focal_labels, files]
 
 
 def get_train_val_indices(dataset, train_ratio, val_ratio):
@@ -46,12 +51,12 @@ def get_train_val_indices(dataset, train_ratio, val_ratio):
 def get_train_val_test(dataset, train_ratio, val_ratio):
     """Return train,test and validation data based on the training and validation ratio. Each dataset that is returned
     contains the features, labels and the filenames"""
-    features, labels, files = get_feature_labels_files(dataset)
+    features, labels_aud, labels_foc, files = get_feature_labels_files(dataset)
     train_indices, val_indices, test_indices = get_train_val_indices(dataset, train_ratio, val_ratio)
-    x_train, y_train, train_files = get_data(features, labels, files, train_indices)
-    x_val, y_val, val_files = get_data(features, labels, files, val_indices)
-    x_test, y_test, test_files = get_data(features, labels, files, test_indices)
-    return {'train': [x_train, y_train, train_files], 'test': [x_test, y_test, test_files], 'val': [x_val, y_val, val_files]}
+    x_train, y_train_aud, y_train_foc, train_files = get_data(features, labels_aud, labels_foc, files, train_indices)
+    x_val, y_val_aud, y_val_foc, val_files = get_data(features, labels_aud, labels_foc, files, val_indices)
+    x_test, y_test_aud, y_test_foc, test_files = get_data(features, labels_aud, labels_foc, files, test_indices)
+    return {'train': [x_train, y_train_aud, y_train_foc, train_files], 'test': [x_test, y_test_aud, y_test_foc, test_files], 'val': [x_val, y_val_aud, y_val_foc, val_files]}
 
 def save_data(data, filename, save_path):
     """Saves the dataset in a given file path"""

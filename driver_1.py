@@ -10,7 +10,8 @@ from keras.models import load_model
 import tensorflow as tf
 from AccelerometerFile import AccelerometerFile
 from AudioFile import AudioFile
-from network.network_train import create_model, save_model, plot_accuracy, plot_loss, plot_ROC, plot_class_ROC, \
+from network.network_train import create_model, create_model_using_z_axis, save_model, plot_accuracy, plot_loss, \
+    plot_ROC, plot_class_ROC, \
     save_arch, save_folder
 from preprocessing.create_data_groups import fetch_files_with_numcalls
 from preprocessing.create_spectrograms import get_spectrogram
@@ -44,35 +45,38 @@ class HyenaCallDetection:
 
             hyena_rec_converted = os.path.join(self.base_dir, hyena_recording + '_converted')
 
-        #     for file_aud, file_acc in zip(file_list['audio'], file_list['acc']):
-        #         self.save_spec(os.path.join(audio_path, file_acc), hyena_rec_converted, audio_path)
-        #         self.save_spec(os.path.join(audio_path, file_aud), hyena_rec_converted, audio_path)
-        #
-        #
-        # self.save_dataset();
+            for file_aud, file_acc in zip(file_list['audio'], file_list['acc']):
+                self.save_spec(os.path.join(audio_path, file_aud), hyena_rec_converted, audio_path)
+                self.save_spec(os.path.join(audio_path, file_acc), hyena_rec_converted, audio_path)
+
+
+        self.save_dataset();
         print("Saved dataset")
 
-        x_train_aud = np.load("/cache/rmishra/dataset/dataset_aud/x_train.npy")
-        x_train_acc_ch0 = np.load("/cache/rmishra/dataset/dataset_acc_ch_0/x_train.npy")
-        x_train_acc_ch1 = np.load("/cache/rmishra/dataset/dataset_acc_ch_1/x_train.npy")
-        x_train_acc_ch2 = np.load("/cache/rmishra/dataset/dataset_acc_ch_2/x_train.npy")
+        x_train_aud = np.load(os.path.join(self.dataset_dir,"dataset_aud/x_train.npy"));
+        x_train_acc_ch0 = np.load(os.path.join(self.dataset_dir,"dataset_acc_ch_0/x_train.npy"))
+        x_train_acc_ch1 = np.load(os.path.join(self.dataset_dir,"dataset_acc_ch_1/x_train.npy"))
+        x_train_acc_ch2 = np.load(os.path.join(self.dataset_dir,"dataset_acc_ch_2/x_train.npy"))
 
-        y_train_aud = np.load("/cache/rmishra/dataset/dataset_aud/y_train_aud.npy")
-        y_train_foc = np.load("/cache/rmishra/dataset/dataset_aud/y_train_foc.npy")
+        y_train_aud = np.load(os.path.join(self.dataset_dir,"dataset_aud/y_train_aud.npy"))
+        y_train_foc = np.load(os.path.join(self.dataset_dir, "dataset_aud/y_train_foc.npy"))
 
-        x_val_aud = np.load("/cache/rmishra/dataset/dataset_aud/x_val.npy")
-        x_val_acc_ch0 = np.load("/cache/rmishra/dataset/dataset_acc_ch_0/x_val.npy")
-        x_val_acc_ch1 = np.load("/cache/rmishra/dataset/dataset_acc_ch_1/x_val.npy")
-        x_val_acc_ch2 = np.load("/cache/rmishra/dataset/dataset_acc_ch_2/x_val.npy")
+        x_val_aud = np.load(os.path.join(self.dataset_dir,"dataset_aud/x_val.npy"))
+        x_val_acc_ch0 = np.load(os.path.join(self.dataset_dir,"dataset_acc_ch_0/x_val.npy"))
+        x_val_acc_ch1 = np.load(os.path.join(self.dataset_dir,"dataset_acc_ch_1/x_val.npy"))
+        x_val_acc_ch2 = np.load(os.path.join(self.dataset_dir,"dataset_acc_ch_2/x_val.npy"))
 
-        y_val_aud = np.load("/cache/rmishra/dataset/dataset_aud/y_val_aud.npy")
-        y_val_foc = np.load("/cache/rmishra/dataset/dataset_aud/y_val_foc.npy")
+        y_val_aud = np.load(os.path.join(self.dataset_dir,"dataset_aud/y_val_aud.npy"))
+        y_val_foc = np.load(os.path.join(self.dataset_dir,"dataset_aud/y_val_foc.npy"))
 
         print("Creating model")
         # Train the RCNN model
         model = create_model(x_train_aud, x_train_acc_ch0, x_train_acc_ch1, x_train_acc_ch2,
                              filters=128, gru_units=128, dense_neurons=1024, dropout=0.5)
-        #
+
+        # model = create_model_using_z_axis(x_train_aud, x_train_acc_ch2,
+        #                      filters=128, gru_units=128, dense_neurons=1024, dropout=0.5)
+
         print(model.summary())
         adam = optimizers.Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
         model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['binary_accuracy'])
@@ -89,13 +93,19 @@ class HyenaCallDetection:
                               shuffle=True,
                               callbacks=[early_stopping, reduce_lr_plat])
 
+        # model_fit = model.fit([x_train_aud, x_train_acc_ch2], [y_train_aud, y_train_foc],
+        #                       epochs=epochs, batch_size=batch_size,
+        #                       validation_data=([x_val_aud, x_val_acc_ch2], [y_val_aud, y_val_foc]),
+        #                       shuffle=True,
+        #                       callbacks=[early_stopping, reduce_lr_plat])
+
         # model_fit = load_model('saved_models/model_2019-12-22_18:13:21.153329_network_train/savedmodel.h5')
 
         # with open('saved_models/model_2019-12-22_18:13:21.153329_network_train/history.pickle', 'rb') as handle:  # loading old history
         #     history = pickle.load(handle)
         print("MOdel TRained")
         date_time = datetime.datetime.now()
-        sf = save_folder(date_time)
+        sf = save_folder(date_time).replace(":", "_")
         self.create_save_folder(sf)
 
         print("Saving Model")

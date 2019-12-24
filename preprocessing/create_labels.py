@@ -20,20 +20,20 @@ def create_label_dataframe(label, begin_time, end_time, window_size, timesteps_p
     Output: Dataframe with relevant labels for the
     spectrogram file
     """
-    labels_df = pd.read_csv(label,
-                            sep='\t',
-                            names=['StartTime','Duration','Label'])
-                            # index_col='Selection')
-    if 'Label' in labels_df.columns:
-        labels_df.Label = labels_df.Label.str[0:3]
-        labels_df['Begin Time(t)'] = ((labels_df['StartTime'] - begin_time) * timesteps_per_second).apply(np.floor)
+    calls_df  = pd.read_csv(label,
+                        sep='\s*\t\s*', header=0
+                        )
 
-        labels_df['End Time(t)'] = ((labels_df['StartTime']+labels_df['Duration'] - begin_time) * timesteps_per_second).apply(np.floor)
-        labels_df = labels_df[labels_df['StartTime'] >= begin_time]
-        labels_df = labels_df[(labels_df['StartTime']+labels_df['Duration']) <= end_time]
-        if len(labels_df[labels_df['Label'].str.contains('\?')]) > 0:
-            labels_df.drop(labels_df.index, inplace=True)
-    return labels_df
+    if 'Label' in calls_df.columns:
+        calls_df.CallType = calls_df.CallType.str[0:3]
+
+        calls_df['Begin Time(t)'] = ((calls_df['StartTime'] - begin_time) * timesteps_per_second).apply(np.floor)
+        calls_df['End Time(t)'] = ((calls_df['StartTime']+calls_df['Duration'] - begin_time) * timesteps_per_second).apply(np.floor)
+        calls_df = calls_df[calls_df['StartTime'] >= begin_time]
+        calls_df = calls_df[(calls_df['StartTime']+calls_df['Duration']) <= end_time]
+        if len(calls_df[calls_df['Label'].str.contains('\?')]) > 0:
+            calls_df.drop(calls_df.index, inplace=True)
+    return calls_df
 
 
 def create_label_matrix(dataframe, timesteps):
@@ -59,16 +59,18 @@ def create_label_matrix(dataframe, timesteps):
     [1, 1, 1, 1, 0, 0 ....],] This represents a Whoop in 0-3 timesteps
     """
     call_labels = ['GIG', 'SQL', 'GRL', 'GRN', 'SQT', 'MOO', 'RUM', 'WHP','OTH']
-    dataframe = dataframe[dataframe['Label'].isin(call_labels)]
-    label = np.zeros((9, timesteps))
+    dataframe = dataframe[dataframe['CallType'].isin(call_labels)]
+    label = np.zeros((9, timesteps)) # against 8 hyena labels and 1 noise label
+    focType = np.zeros((3, timesteps)) # against FOCAL / NON-FOCAL hyena
     label[8,:] = 1
-    if 'Label' in list(dataframe):
+    if 'CallType' in list(dataframe):
         # create update list
         update_list = []
         for index, row in dataframe.iterrows():
             update_list.append([row['Begin Time(t)'],
                                 row['End Time(t)'],
-                                row['Label']])
+                                row['CallType'],
+                                row['Focal']])
 
         # label correct row based on label
         for l in update_list:
@@ -91,7 +93,15 @@ def create_label_matrix(dataframe, timesteps):
             elif l[2] == 'WHP':
                 label[7][begin_t:end_t] = 1
             label[8][begin_t:end_t] = 0
-    return label
+
+            if l[3] == 0:  # Non Focal
+                focType[0][begin_t: end_t] = 1
+            elif l[3] == 1:  # Not Defined
+                focType[1][begin_t: end_t] = 1
+            elif l[3] == 2:  # Focal
+                focType[2][begin_t: end_t] = 1
+
+    return [label, focType]
 
 def save_label_file(label_matrix, spec_path, spec_file):
         # Saving the one hot encoded Label file if there is at least one call present in the 6 sec segment
