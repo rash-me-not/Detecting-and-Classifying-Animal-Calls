@@ -81,7 +81,7 @@ class HyenaCallDetection:
                 # Extracting file identifier from the filepath
                 # Example: (i.e.'cc16_352a_14401s' from path "'/cache/rmishra/cc16_ML/cc16_352a/cc16_352a_14401s_acc.wav'")
                 # for saving spec and label files with begin and end timestamp
-                file = filepath.split("/")[-1].rsplit("_", maxsplit=1)[0]
+                file = os.path.split(filepath)[-1].rsplit("_", maxsplit=1)[0]
 
                 # fetch the label txt file against the file identifier and create a label dataframe for calls between
                 # the start and end timestamp
@@ -138,7 +138,7 @@ class HyenaCallDetection:
 
 
 if __name__ == "__main__":
-    base_dir = "/cache/rmishra"
+    base_dir = "C:/Users/rashm/Downloads"
     spec_window_size = 6
     slide = 3
     only_z_axis = True
